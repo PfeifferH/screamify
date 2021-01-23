@@ -3,11 +3,11 @@ import React, { Component } from 'react';
 import './App.css';
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
+import ProgressBar from 'react-bootstrap/ProgressBar'
 import Badge from 'react-bootstrap/Badge'
 import { parseArrayBuffer } from 'midi-json-parser';
 import * as Tone from 'tone'
 import fs from 'fs'
-
 
 // Firebase
 // Firebase App (the core Firebase SDK) is always required and
@@ -37,7 +37,6 @@ class App extends Component {
       firebase.app(); // if already initialized, use that one
     }
   }
-
 
   async play_screams(midi_url, sound_url, sound_file, sound_key) {
 
@@ -84,20 +83,13 @@ class App extends Component {
     return
   }
 
-
   render() {
-
-    // Sounds
-    // https://upload.wikimedia.org/wikipedia/commons/5/5f/   --- Slide_String_1_%28short%29.ogg
-    // https://tonejs.github.io/audio/berklee/    --- gong_1.mp3, gurgling_theremin_1.mp3
-
-    this.play_screams(
+    /*this.play_screams(
       "https://upload.wikimedia.org/wikipedia/commons/5/55/MIDI_sample.mid",
       "https://tonejs.github.io/audio/berklee/",
       "gong_1.mp3",
       "C4",
-      )
-
+      )*/
     return (
       <div className="App">
         <header className="App-header">
@@ -105,86 +97,87 @@ class App extends Component {
       </header>
         <div className="App-body">
           <Button className="Button" variant="secondary">SCREAM</Button>{' '}
-          <FileUpload></FileUpload>
+          <ScreamUpload></ScreamUpload>
+          <MIDIUpload></MIDIUpload>
         </div>
       </div>
     );
   }
 }
 
-
-
-
-
-class FileUpload extends Component {
+class ScreamUpload extends Component {
   handleSubmit(event) {
-    const form = event.currentTarget;
     event.preventDefault();
 
-    var db = firebase.firestore();
-    var storageRef = firebase.storage().ref();
+    if (this.state.name != '' && this.state.file != '') {
+      this.setState({ ...this.state, submittext: 'Uploading...', submitting: true });
+      var db = firebase.firestore();
+      var storageRef = firebase.storage().ref();
 
-    var doc = db.collection("scream").add({
-      name: this.state.name,
-      note: this.state.note
-    })
-      .then((docRef) => {
-        console.log("Document written with ID: ", docRef.id);
-
-        // Create a reference to file
-        var screamFileRef = storageRef.child('screams/' + docRef.id);
-        var uploadTask = screamFileRef.put(this.state.file);
-
-        uploadTask.on('state_changed',
-          (snapshot) => {
-            // Observe state change events such as progress, pause, and resume
-            // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
-            var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log('Upload is ' + progress + '% done');
-            switch (snapshot.state) {
-              case firebase.storage.TaskState.PAUSED: // or 'paused'
-                console.log('Upload is paused');
-                break;
-              case firebase.storage.TaskState.RUNNING: // or 'running'
-                console.log('Upload is running');
-                break;
-            }
-          },
-          (error) => {
-            // Handle unsuccessful uploads
-          },
-          () => {
-            // Handle successful uploads on complete
-            // For instance, get the download URL: https://firebasestorage.googleapis.com/...
-            uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
-              console.log('File available at', downloadURL);
-              
-              doc.update({
-                url: downloadURL
-              }).then((docRef) => {
-                console.log("Document updated");
-                // Reset form
-                this.setState({ ...this.state, name: '', filename: "select a file...", file: '', note: 'A' });
-              })
-                .catch((error) => {
-                  console.error("Error updating document: ", error);
-                  // Reset form
-                  this.setState({ ...this.state, name: '', filename: "select a file...", file: '', note: 'A' });
-                });
-            });
-          }
-        );
-
+      var doc = db.collection("scream").doc();
+      doc.set({
+        name: this.state.name,
+        note: this.state.note
       })
-      .catch(function (error) {
-        console.error("Error adding document: ", error);
-      });
+        .then(() => {
+          console.log("Document written with ID: ", doc.id);
 
+          // Create a reference to file
+          var screamFileRef = storageRef.child('screams/' + doc.id);
+          var uploadTask = screamFileRef.put(this.state.file);
+
+          uploadTask.on('state_changed',
+            (snapshot) => {
+              // Observe state change events such as progress, pause, and resume
+              // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+              var uploadprogress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              this.setState({ ...this.state, progress: uploadprogress });
+              console.log('Upload is ' + uploadprogress + '% done');
+              switch (snapshot.state) {
+                case firebase.storage.TaskState.PAUSED: // or 'paused'
+                  console.log('Upload is paused');
+                  break;
+                case firebase.storage.TaskState.RUNNING: // or 'running'
+                  console.log('Upload is running');
+                  break;
+              }
+            },
+            (error) => {
+              // Handle unsuccessful uploads
+            },
+            () => {
+              // Handle successful uploads on complete
+              uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                console.log('File available at', downloadURL);
+
+                doc.update({
+                  url: downloadURL
+                }).then((doc) => {
+                  console.log("Document updated");
+                  // Reset form
+                  this.setState({ ...this.state, name: '', filename: "select a file...", file: '', note: 'A', submittext: 'Upload', submitting: false, progress: 0  });
+                })
+                  .catch((error) => {
+                    console.error("Error updating document: ", error);
+                    // Reset form
+                    this.setState({ ...this.state, name: '', filename: "select a file...", file: '', note: 'A', submittext: 'Upload', submitting: false, progress: 0  });
+                  });
+              });
+            }
+          );
+
+        })
+        .catch(function (error) {
+          console.error("Error adding document: ", error);
+        });
+    } else {
+      console.log("MUST FILL INFO");
+    }
   };
 
   constructor(props) {
     super(props);
-    this.state = { name: '', filename: "select a file...", file: '', note: 'A' };
+    this.state = { name: '', filename: "select a file...", file: '', note: 'A', submittext: 'Upload', submitting: false, progress: 0  };
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.handleFileChange = this.handleFileChange.bind(this);
@@ -236,10 +229,133 @@ class FileUpload extends Component {
             <option>G#</option>
           </Form.Control>
         </Form.Group>
-        <Button variant="primary" type="submit">
-          Upload
+        {this.state.submitting == true ? <ProgressBar animated now={this.state.progress} /> :
+          <Button variant="primary" type="submit">
+            {this.state.submittext}
           </Button>
+
+        }
       </Form>
+
+    </>
+    );
+  }
+}
+
+class MIDIUpload extends Component {
+  handleSubmit(event) {
+    event.preventDefault();
+
+    if (this.state.name != '' && this.state.file != '') {
+      this.setState({ ...this.state, submittext: 'Uploading...', submitting: true });
+      var db = firebase.firestore();
+      var storageRef = firebase.storage().ref();
+
+      var doc = db.collection("songs").doc();
+      doc.set({
+        name: this.state.name
+      })
+        .then(() => {
+          console.log("Document written with ID: ", doc.id);
+
+          // Create a reference to file
+          var screamFileRef = storageRef.child('songs/' + doc.id);
+          var uploadTask = screamFileRef.put(this.state.file);
+
+          uploadTask.on('state_changed',
+            (snapshot) => {
+              // Observe state change events such as progress, pause, and resume
+              // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+              var uploadprogress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              this.setState({ ...this.state, progress: uploadprogress });
+              console.log('Upload is ' + uploadprogress + '% done');
+              switch (snapshot.state) {
+                case firebase.storage.TaskState.PAUSED: // or 'paused'
+                  console.log('Upload is paused');
+                  break;
+                case firebase.storage.TaskState.RUNNING: // or 'running'
+                  console.log('Upload is running');
+                  break;
+              }
+            },
+            (error) => {
+              // Handle unsuccessful uploads
+            },
+            () => {
+              // Handle successful uploads on complete
+              uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                console.log('File available at', downloadURL);
+
+                doc.update({
+                  url: downloadURL
+                }).then((doc) => {
+                  console.log("Document updated");
+                  // Reset form
+                  this.setState({ ...this.state, name: '', filename: "select a MIDI file...", file: '', submittext: 'Upload', submitting: false, progress: 0 });
+                })
+                  .catch((error) => {
+                    console.error("Error updating document: ", error);
+                    // Reset form
+                    this.setState({ ...this.state, name: '', filename: "select a MIDI file...", file: '', submittext: 'Upload', submitting: false, progress: 0 });
+                  });
+              });
+            }
+          );
+
+        })
+        .catch(function (error) {
+          console.error("Error adding document: ", error);
+        });
+    } else {
+      console.log("MUST FILL INFO");
+    }
+  };
+
+  constructor(props) {
+    super(props);
+    this.state = { name: '', filename: "select a file...", file: '', submittext: 'Upload', submitting: false, progress: 0 };
+    this.handleSubmit = this.handleSubmit.bind(this);
+    this.handleChange = this.handleChange.bind(this);
+    this.handleFileChange = this.handleFileChange.bind(this);
+  }
+
+  handleChange(event) {
+    this.setState({
+      ...this.state,
+      [event.target.name]: event.target.value
+    });
+  }
+
+  handleFileChange(event) {
+    this.setState({
+      ...this.state,
+      filename: event.target.files[0].name,
+      [event.target.name]: event.target.files[0]
+    });
+  }
+
+  render() {
+    return (<>
+      <h2>Add a New Song</h2>
+      <Form onSubmit={this.handleSubmit}>
+        <Form.Label>Song Name</Form.Label>
+        <Form.Control type="text" placeholder="Song Name" name="name" value={this.state.name} onChange={this.handleChange} />
+        <Form.Label>File</Form.Label>
+        <Form.File
+          name="file"
+          onChange={this.handleFileChange}
+          id="custom-file"
+          label={this.state.filename}
+          custom
+        />
+        {this.state.submitting == true ? <ProgressBar animated now={this.state.progress} /> :
+          <Button variant="primary" type="submit">
+            {this.state.submittext}
+          </Button>
+
+        }
+      </Form>
+
     </>
     );
   }
