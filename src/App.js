@@ -4,7 +4,10 @@ import './App.css';
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
 import ProgressBar from 'react-bootstrap/ProgressBar'
-import Badge from 'react-bootstrap/Badge'
+import Navbar from 'react-bootstrap/Navbar'
+import Nav from 'react-bootstrap/Nav'
+import Col from 'react-bootstrap/Col'
+import Row from 'react-bootstrap/Row'
 
 // Firebase
 // Firebase App (the core Firebase SDK) is always required and
@@ -38,15 +41,34 @@ class App extends Component {
   render() {
     return (
       <div className="App">
-        <header className="App-header">
-          Welcome To Screamify
-      </header>
-        <div className="App-body">
-          <Button className="Button" variant="secondary">SCREAM</Button>{' '}
+        <div className="App-sidebar">
+          <h3>Admin Stuff</h3>
           <ScreamUpload></ScreamUpload>
           <MIDIUpload></MIDIUpload>
         </div>
+        <div className="App-body">
+          <Navbar fixed="bottom" bg="dark" variant="dark" className="justify-content-center">
+            <Nav className="justify-content-center">
+              <Button className="retro rbtn-big media">
+                Play
+              </Button>
+              <Button className="retro rbtn-big media">
+                Stop
+              </Button>
+              <Button className="retro rbtn-big media">
+                Skip
+              </Button>
+            </Nav>
+          </Navbar>
+          <div className="App-content">
+            <header className="App-header">
+              Welcome To Screamify
+          </header>
+            <Button className="Button" variant="secondary">SCREAM</Button>{' '}
+          </div>
+        </div>
       </div>
+
     );
   }
 }
@@ -101,12 +123,12 @@ class ScreamUpload extends Component {
                 }).then((doc) => {
                   console.log("Document updated");
                   // Reset form
-                  this.setState({ ...this.state, name: '', filename: "select a file...", file: '', note: 'A', submittext: 'Upload', submitting: false, progress: 0  });
+                  this.setState({ ...this.state, name: '', filename: "select a file...", file: '', note: 'A', submittext: 'Upload', submitting: false, progress: 0 });
                 })
                   .catch((error) => {
                     console.error("Error updating document: ", error);
                     // Reset form
-                    this.setState({ ...this.state, name: '', filename: "select a file...", file: '', note: 'A', submittext: 'Upload', submitting: false, progress: 0  });
+                    this.setState({ ...this.state, name: '', filename: "select a file...", file: '', note: 'A', submittext: 'Upload', submitting: false, progress: 0 });
                   });
               });
             }
@@ -123,7 +145,7 @@ class ScreamUpload extends Component {
 
   constructor(props) {
     super(props);
-    this.state = { name: '', filename: "select a file...", file: '', note: 'A', submittext: 'Upload', submitting: false, progress: 0  };
+    this.state = { name: '', filename: "select a file...", file: '', note: 'A', submittext: 'Upload', submitting: false, progress: 0 };
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.handleFileChange = this.handleFileChange.bind(this);
@@ -145,45 +167,57 @@ class ScreamUpload extends Component {
   }
 
   render() {
-    return (<>
-      <h2>Add a New Scream</h2>
+    return (<div className="retro">
+      <h5>Add a New Scream</h5>
       <Form onSubmit={this.handleSubmit}>
-        <Form.Label>Scream Name</Form.Label>
-        <Form.Control type="text" placeholder="Name" name="name" value={this.state.name} onChange={this.handleChange} />
-        <Form.Label>File</Form.Label>
-        <Form.File
-          name="file"
-          onChange={this.handleFileChange}
-          id="custom-file"
-          label={this.state.filename}
-          custom
-        />
-        <Form.Group controlId="exampleForm.ControlSelect1">
-          <Form.Label>Note</Form.Label>
-          <Form.Control as="select" name="note" value={this.state.note} onChange={this.handleChange}>
-            <option>A</option>
-            <option>A#</option>
-            <option>B</option>
-            <option>C</option>
-            <option>C#</option>
-            <option>D</option>
-            <option>D#</option>
-            <option>E</option>
-            <option>F</option>
-            <option>F#</option>
-            <option>G</option>
-            <option>G#</option>
-          </Form.Control>
+
+        <Form.Group as={Row} controlId="formHorizontalName">
+          <Form.Label column sm={2}>
+            Name
+          </Form.Label>
+          <Col sm={10}>
+            <Form.Control type="text" placeholder="Name" name="name" value={this.state.name} onChange={this.handleChange} />
+          </Col>
+        </Form.Group>
+
+        <Form.Group as={Row} controlId="formHorizontalName">
+          <Form.Label column sm={2}>File</Form.Label>
+          <Col sm={10}>
+            <Form.File
+              name="file"
+              onChange={this.handleFileChange}
+              id="custom-file"
+              label={this.state.filename}
+              custom
+            /></Col>
+        </Form.Group>
+        <Form.Group as={Row} controlId="exampleForm.ControlSelect1">
+          <Form.Label column sm={2}>Note</Form.Label>
+          <Col sm={10}>
+            <Form.Control as="select" name="note" value={this.state.note} onChange={this.handleChange}>
+              <option>A</option>
+              <option>A#</option>
+              <option>B</option>
+              <option>C</option>
+              <option>C#</option>
+              <option>D</option>
+              <option>D#</option>
+              <option>E</option>
+              <option>F</option>
+              <option>F#</option>
+              <option>G</option>
+              <option>G#</option>
+            </Form.Control></Col>
         </Form.Group>
         {this.state.submitting == true ? <ProgressBar animated now={this.state.progress} /> :
-          <Button variant="primary" type="submit">
+          <Button className="retro rbtn-small" type="submit">
             {this.state.submittext}
           </Button>
 
         }
       </Form>
 
-    </>
+    </div>
     );
   }
 }
@@ -281,28 +315,38 @@ class MIDIUpload extends Component {
   }
 
   render() {
-    return (<>
-      <h2>Add a New Song</h2>
+    return (<div className="retro">
+      <h5>Add a New Song</h5>
       <Form onSubmit={this.handleSubmit}>
-        <Form.Label>Song Name</Form.Label>
-        <Form.Control type="text" placeholder="Song Name" name="name" value={this.state.name} onChange={this.handleChange} />
-        <Form.Label>File</Form.Label>
-        <Form.File
-          name="file"
-          onChange={this.handleFileChange}
-          id="custom-file"
-          label={this.state.filename}
-          custom
-        />
+
+        <Form.Group as={Row} controlId="formHorizontalName">
+          <Form.Label column sm={2}>
+            Name
+          </Form.Label>
+          <Col sm={10}>
+            <Form.Control type="text" placeholder="Song Name" name="name" value={this.state.name} onChange={this.handleChange} />
+          </Col>
+        </Form.Group>
+        <Form.Group as={Row} controlId="formHorizontalName">
+          <Form.Label column sm={2}>File</Form.Label>
+          <Col sm={10}>
+            <Form.File
+              name="file"
+              onChange={this.handleFileChange}
+              id="custom-file"
+              label={this.state.filename}
+              custom
+            /></Col>
+        </Form.Group>
         {this.state.submitting == true ? <ProgressBar animated now={this.state.progress} /> :
-          <Button variant="primary" type="submit">
+          <Button className="retro rbtn-small" type="submit">
             {this.state.submittext}
           </Button>
 
         }
       </Form>
 
-    </>
+    </div>
     );
   }
 }
