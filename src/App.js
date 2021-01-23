@@ -9,8 +9,8 @@ function App() {
       <header className="App-header">
           Welcome To Screamify
       </header>
-      <body>
-       
+      <body className="App-body">
+        <Button className="Button" variant="secondary">SCREAM</Button>{' '}
        
       </body>
     </div>
