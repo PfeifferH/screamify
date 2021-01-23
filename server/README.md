@@ -1,4 +1,4 @@
-#Installing Audio To Midi on non-windows machines
+# Installing Audio To Midi on non-windows machines
 
 Try `pip install audio-to-midi`
 
