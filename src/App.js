@@ -183,13 +183,6 @@ class App extends Component {
       )*/
     return (
       <div className="App">
-        <div className="App-sidebar">
-          <h4>Admin Stuff</h4>
-          <ScreamUpload></ScreamUpload>
-          <MIDIUpload></MIDIUpload>
-          <AudioUpload></AudioUpload>
-        </div>
-
         <div className="App-body">
           <Navbar fixed="bottom" bg="dark" variant="dark" className="Player-bar">
             <Nav className="Player-nowplaying">
@@ -222,6 +215,7 @@ class App extends Component {
         <div className="App-sidebar">
           <h3>Admin Stuff</h3>
           <ScreamUpload></ScreamUpload>
+          <AudioUpload></AudioUpload>
           <MIDIUpload></MIDIUpload>
         </div>
       </div>
@@ -534,7 +528,7 @@ class MIDIUpload extends Component {
 
   render() {
     return (<div className="retro">
-      <h5>Add a New Song</h5>
+      <h5>Add a New Song (MIDI)</h5>
       <Form onSubmit={this.handleSubmit}>
 
         <Form.Group as={Row} controlId="formHorizontalName">
