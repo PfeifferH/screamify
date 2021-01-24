@@ -62,31 +62,6 @@ class App extends Component {
       })
     })
 
-
-    // const sampler = new Tone.Sampler({
-    //   urls: {
-    //     "C4": "gurgling_theremin_1.mp3",
-    //   },
-    //   release: 1,
-    //   baseUrl: "https://tonejs.github.io/audio/berklee/",
-    // }).toDestination();
-
-    // const sampler = new Tone.Sampler({
-    //   urls: {
-    //     "A4": "Slide_String_1_%28short%29.ogg",
-    //   },
-    //   release: 1,
-    //   baseUrl: "https://upload.wikimedia.org/wikipedia/commons/5/5f/",
-    // }).toDestination();
-
-    // const sampler = new Tone.Sampler({
-    //   urls: {
-    //     "A4": "gong_1.mp3",
-    //   },
-    //   release: 1,
-    //   baseUrl: "https://tonejs.github.io/audio/berklee/",
-    // }).toDestination();
-
     const sampler = new Tone.Sampler({
       urls: {
         "C4": sound_file,
