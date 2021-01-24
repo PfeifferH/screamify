@@ -189,6 +189,7 @@ class App extends Component {
           <MIDIUpload></MIDIUpload>
           <AudioUpload></AudioUpload>
         </div>
+
         <div className="App-body">
           <Navbar fixed="bottom" bg="dark" variant="dark" className="Player-bar">
             <Nav className="Player-nowplaying">
@@ -217,6 +218,11 @@ class App extends Component {
               {this.state.midiURL != null && (this.state.screamURL == null && <><Gallery playing={this.state.playing} collection="scream" icon="img/dogcow.png" onItemSelect={this.handleScreamSelect} /></>)}
             </div>
           </div>
+        </div>
+        <div className="App-sidebar">
+          <h3>Admin Stuff</h3>
+          <ScreamUpload></ScreamUpload>
+          <MIDIUpload></MIDIUpload>
         </div>
       </div>
 
