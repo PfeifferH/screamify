@@ -64,7 +64,7 @@ class App extends Component {
 
     const sampler = new Tone.Sampler({
       urls: {
-        "C4": sound_file,
+        [sound_key]: sound_file,
       },
       release: 1,
       baseUrl: sound_url,
