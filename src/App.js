@@ -114,10 +114,14 @@ class App extends Component {
     //get the tracks
 
     console.log(midi_json);
-
+    console.log(this.state.midiName);
     var notes = midi_json.tracks[1].notes;
     if (this.state.midiName == "Bohemian Rhapsody") {
+      console.log("override");
       notes = midi_json.tracks[4].notes;
+    }else if(this.state.midiName == "Country Roads"){
+      console.log("override");
+      notes = midi_json.tracks[9].notes;
     }
     notes.forEach(note => {
       //note.midi, note.time, note.duration, note.name
