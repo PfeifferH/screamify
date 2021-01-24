@@ -217,7 +217,7 @@ class App extends Component {
           </div>
         </div>
         <div className="App-sidebar">
-          <h3>Admin Stuff</h3>
+          <h5>Admin Stuff</h5>
           <ScreamUpload></ScreamUpload>
           <AudioUpload></AudioUpload>
           <MIDIUpload></MIDIUpload>
