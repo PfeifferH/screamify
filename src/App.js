@@ -5,7 +5,6 @@ import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 import Badge from 'react-bootstrap/Badge'
-import { parseArrayBuffer } from 'midi-json-parser';
 import * as Tone from 'tone'
 import fs from 'fs'
 import Navbar from 'react-bootstrap/Navbar'
@@ -35,7 +34,7 @@ var firebaseConfig = {
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = { playing: false, midiURL: null, screamURL: null };
+    this.state = { playing: false, playingname: "", midiURL: null, screamURL: null, loadProgress: 0, sampler: null };
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     } else {
@@ -43,32 +42,82 @@ class App extends Component {
     }
     this.handleSongSelect = this.handleSongSelect.bind(this);
     this.handleScreamSelect = this.handleScreamSelect.bind(this);
+    this.stopPlayback = this.stopPlayback.bind(this);
   }
 
+  stopPlayback() {
+    if (this.state.sampler != null) {
+      this.state.sampler.releaseAll();
+      this.state.sampler.dispose();
+    }
+    this.setState({ ...this.state, playingname: "", playing: false, sampler: null });
+  }
 
   handleScreamSelect(screamURL) {
-    this.setState({ ...this.state, screamURL: screamURL });
+    console.log("SCREAM SELECTED");
+    this.setState({ ...this.state, screamURL: screamURL }, () => this.startPlaying());
   }
 
-  handleSongSelect(midiURL) {
+  startPlaying() {
+    console.log(this.state);
+    if (this.state.midiURL != null && this.state.screamURL != null) {
+      this.stopPlayback();
+      var comps = this.state.screamURL.split("/");
+      var url_base = this.state.screamURL.substring(0, this.state.screamURL.length - comps[comps.length - 1].length);
+      var url_file = comps[comps.length - 1];
+      this.play_screams(
+        this.state.midiURL,
+        url_base,
+        url_file,
+        "C4",
+      );
+    } else {
+      // Something went wrong
+      this.setState({ ...this.state, midiURL: null, screamURL: null, loadProgress: 0 });
+    }
+  }
+
+
+  handleSongSelect(midiURL, name) {
     console.log("SONG SELECTED");
     console.log(midiURL);
-    this.setState({ ...this.state, midiURL: midiURL });
+    this.setState({ ...this.state, midiURL: midiURL, playingname: name });
+  }
+
+  componentDidUpdate() {
+
   }
 
   async play_screams(midi_url, sound_url, sound_file, sound_key) {
-
+    console.log(11);
+    this.setState({ ...this.state, loadProgress: 10 });
     const { Midi } = require('@tonejs/midi')
-
     // load a midi file in the browser
+    console.log("Loading from:" + midi_url);
     const midi_json = await Midi.fromUrl(midi_url)
-
+    this.setState({ ...this.state, loadProgress: 20 });
+    console.log(2);
     // populate data structure
     var notes_array = [];
     var duration_array = [];
     var time_array = []
+    console.log(3);
     //get the tracks
-    midi_json.tracks.forEach(track => {
+
+    console.log(midi_json);
+
+    var notes = midi_json.tracks[4].notes;
+    notes.forEach(note => {
+      //note.midi, note.time, note.duration, note.name
+      notes_array.push(note.name);
+      duration_array.push(note.duration);
+      time_array.push(note.time);
+    })
+    console.log(5);
+    this.setState({ ...this.state, loadProgress: 30 });
+
+    /*midi_json.tracks.forEach(track => {
+      console.log(4);
       //notes are an array
       const notes = track.notes
       notes.forEach(note => {
@@ -77,27 +126,40 @@ class App extends Component {
         duration_array.push(note.duration);
         time_array.push(note.time);
       })
-    })
+      console.log(5);
+    })*/
+    console.log(6);
+    this.setState({
+      ...this.state, sampler: new Tone.Sampler({
+        urls: {
+          [sound_key]: sound_file,
+        },
+        release: 1,
+        baseUrl: sound_url,
+      }).toDestination()
+    }, () => {
+      console.log(7);
+      this.setState({ ...this.state, loadProgress: 40 });
+      // play sound
+      const now = Tone.now();
+      console.log(8);
 
-    const sampler = new Tone.Sampler({
-      urls: {
-        [sound_key]: sound_file,
-      },
-      release: 1,
-      baseUrl: sound_url,
-    }).toDestination();
-
-    // play sound
-    const now = Tone.now();
-    var time = 0;
-    Tone.loaded().then(() => {
-      for (var i = 0; i < midi_json.tracks[1].notes.length; i++)
-      {
-        sampler.triggerAttack(notes_array[i], now + time_array[i])
-        sampler.triggerRelease(now + time_array[i] + duration_array[i])
-      }
-    })
-
+      Tone.loaded().then(() => {
+        var progress = 40;
+        for (var i = 0; i < notes_array.length; i++) {
+          console.log(9);
+          this.state.sampler.triggerAttack(notes_array[i], now + time_array[i]);
+          this.state.sampler.triggerRelease(now + time_array[i] + duration_array[i]);
+          if (parseInt(40 + 60 * (i / notes_array.length)) - progress >= 5) {
+            console.log(parseInt(40 + 60 * (i / notes_array.length)));
+            this.setState({ ...this.state, loadProgress: parseInt(40 + 60 * (i / notes_array.length)) });
+            progress = parseInt(40 + 60 * (i / notes_array.length));
+          }
+        }
+        this.setState({ ...this.state, playing: true, midiURL: null, screamURL: null, loadProgress: 0 });
+      })
+      console.log(10);
+    });
     return
   }
 
@@ -116,28 +178,31 @@ class App extends Component {
           <MIDIUpload></MIDIUpload>
         </div>
         <div className="App-body">
-          <Navbar fixed="bottom" bg="dark" variant="dark" className="justify-content-center">
+          <Navbar fixed="bottom" bg="dark" variant="dark" className="Player-bar">
+            <Nav className="Player-nowplaying">
+              {this.state.playing ? <img className="Player-nowplaying-img" src="img/mac_o.png" alt="Macintosh file icon" /> : <img className="Player-nowplaying-img" src="img/mac.png" alt="Macintosh file icon" />}
+
+              <div className="Player-nowplaying-text">
+                <h6>Now Playing</h6>
+                <h5>{this.state.playing ? this.state.playingname : "Not Playing"}</h5>
+              </div>
+            </Nav>
             <Nav className="justify-content-center" >
-              <Button disabled={!this.state.playing} className="retro rbtn-big media">
-                Play
-              </Button>
-              <Button disabled={!this.state.playing} className="retro rbtn-big media">
+              <Button disabled={!this.state.playing} onClick={this.stopPlayback} className="retro rbtn-big media">
                 Stop
               </Button>
-              <Button disabled={!this.state.playing} className="retro rbtn-big media">
-                Skip
-              </Button>
             </Nav>
+            <div></div>
           </Navbar>
           <h4>Welcome to Screamify</h4>
           <div className="App-content retro">
-          {this.state.midiURL == null && <h5>Song Library</h5>}
-          {this.state.midiURL != null && this.state.screamURL == null && <h5>Scream Library</h5>}
-          {this.state.midiURL != null && this.state.screamURL != null && <h3>Loading... Prepare to be wow-ed.</h3>}
-            <hr/>
+            {this.state.midiURL == null && <h5>Song Library</h5>}
+            {this.state.midiURL != null && this.state.screamURL == null && <h5>Scream Library</h5>}
+            {this.state.midiURL != null && this.state.screamURL != null && <><h3>Loading audio... </h3><h4>Prepare to be wow-ed.</h4><ProgressBar animated now={this.state.loadProgress} /></>}
+            {!(this.state.midiURL != null && this.state.screamURL != null) && <><hr /></>}
             <div className="gallery">
-              {this.state.midiURL == null && <><Gallery playing={this.state.playing} collection="songs" onItemSelect={this.handleSongSelect} /></>}
-              {this.state.midiURL != null && (this.state.screamURL == null && <><Gallery playing={this.state.playing} collection="scream" onItemSelect={this.handleScreamSelect} /></>)}
+              {this.state.midiURL == null && <><Gallery playing={this.state.playing} collection="songs" icon="img/mac.png" onItemSelect={this.handleSongSelect} /></>}
+              {this.state.midiURL != null && (this.state.screamURL == null && <><Gallery playing={this.state.playing} collection="scream" icon="img/dogcow.png" onItemSelect={this.handleScreamSelect} /></>)}
             </div>
           </div>
         </div>
@@ -156,8 +221,8 @@ class Gallery extends Component {
     this.handleClick = this.handleClick.bind(this);
   }
 
-  handleClick(midiURL) {
-    this.props.onItemSelect(midiURL);
+  handleClick(midiURL, name) {
+    this.props.onItemSelect(midiURL, name);
   }
 
   componentDidMount() {
@@ -166,18 +231,16 @@ class Gallery extends Component {
       ...this.state,
       listenerUnsubscribe: db.collection(this.props.collection)
         .onSnapshot((snapshot) => {
-          console.log(snapshot);
           var data = <></>;
           if (snapshot.docs !== null && snapshot.docs.length >= 0) {
             data = snapshot.docs.map((doc) =>
-              <GalleryItem key={doc.key} url={doc.data().url} onSongClick={this.handleClick} name={doc.data().name} />
+              <GalleryItem key={doc.id} url={doc.data().url} icon={this.props.icon} onSongClick={this.handleClick} name={doc.data().name} />
             )
           }
           this.setState({
             ...this.state,
             data: data
           });
-          console.log(this.state.data);
         })
     });
   }
@@ -203,8 +266,8 @@ class Gallery extends Component {
 }
 
 function GalleryItem(props) {
-  return <div className='Gallery-item' onClick={() => { props.onSongClick(props.url) }}>
-    <img className="Gallery-icon" src="img/mac.png" alt="Macintosh file icon" />
+  return <div className='Gallery-item' onClick={() => { props.onSongClick(props.url, props.name) }}>
+    <img className="Gallery-icon" src={props.icon} alt="Macintosh file icon" />
     <p>{props.name}</p>
   </div>;
 }

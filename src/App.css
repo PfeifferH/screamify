@@ -112,6 +112,11 @@ button{
   transform: translateX(5px) translateY(2px);
 }
 
+button.retro.btn.btn-primary{
+  color: #fff;
+  background-color: #007bff;
+}
+
 .App-content.retro:active{
   box-shadow: 3px 3px black, 5px 5px white;
   transform: none;
@@ -172,6 +177,7 @@ button{
   height: 100px;
   width: 100px;
   justify-content: center;
+  margin: 8px 4px 8px 4px;
 }
 
 .Gallery-icon{
@@ -181,4 +187,25 @@ button{
 
 .Gallery-icon:active{
   transform: translateX(3px) translateY(2px);
+}
+
+nav.Player-bar.navbar.navbar-expand.navbar-dark.bg-dark.fixed-bottom{
+  display: flex;
+  justify-content:space-around;
+  flex-direction: row;
+}
+
+.Player-bar .Player-nowplaying.navbar-nav{
+  padding: 0 0;
+}
+
+.Player-nowplaying-text{
+  margin-left: 8px;
+  color:#ffffff;
+  display: flex;
+  flex-direction: column;
+}
+.Player-nowplaying-img{
+  height: 50px;
+  width: 50px;
 }
