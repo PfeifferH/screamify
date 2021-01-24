@@ -34,7 +34,7 @@ var firebaseConfig = {
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = { playing: false, playingname: "", midiURL: null, screamURL: null, loadProgress: 0, sampler: null };
+    this.state = { playing: false, playingName: "", stopTimer: null, midiURL: null, midiName: null, screamURL: null, loadProgress: 0, sampler: null };
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     } else {
@@ -42,7 +42,16 @@ class App extends Component {
     }
     this.handleSongSelect = this.handleSongSelect.bind(this);
     this.handleScreamSelect = this.handleScreamSelect.bind(this);
+    this.handleBack = this.handleBack.bind(this);
     this.stopPlayback = this.stopPlayback.bind(this);
+  }
+
+  handleBack() {
+    this.setState({ ...this.state, midiURL: null, midiName: null, screamURL: null, loadProgress: 0 });
+  }
+
+  componentWillUnmount() {
+    this.stopPlayback();
   }
 
   stopPlayback() {
@@ -50,7 +59,10 @@ class App extends Component {
       this.state.sampler.releaseAll();
       this.state.sampler.dispose();
     }
-    this.setState({ ...this.state, playingname: "", playing: false, sampler: null });
+    if (this.state.stopTimer != null){
+      clearTimeout(this.state.stopTimer);
+    }
+    this.setState({ ...this.state, stopTimer:null, playingName: "", playing: false, sampler: null });
   }
 
   handleScreamSelect(screamURL) {
@@ -59,7 +71,6 @@ class App extends Component {
   }
 
   startPlaying() {
-    console.log(this.state);
     if (this.state.midiURL != null && this.state.screamURL != null) {
       this.stopPlayback();
       var comps = this.state.screamURL.split("/");
@@ -73,7 +84,7 @@ class App extends Component {
       );
     } else {
       // Something went wrong
-      this.setState({ ...this.state, midiURL: null, screamURL: null, loadProgress: 0 });
+      this.setState({ ...this.state, midiURL: null, midiName: null, screamURL: null, loadProgress: 0 });
     }
   }
 
@@ -81,7 +92,7 @@ class App extends Component {
   handleSongSelect(midiURL, name) {
     console.log("SONG SELECTED");
     console.log(midiURL);
-    this.setState({ ...this.state, midiURL: midiURL, playingname: name });
+    this.setState({ ...this.state, midiURL: midiURL, midiName: name });
   }
 
   componentDidUpdate() {
@@ -89,24 +100,25 @@ class App extends Component {
   }
 
   async play_screams(midi_url, sound_url, sound_file, sound_key) {
-    console.log(11);
+    console.log(1);
     this.setState({ ...this.state, loadProgress: 10 });
-    const { Midi } = require('@tonejs/midi')
+    const { Midi } = require('@tonejs/midi');
     // load a midi file in the browser
     console.log("Loading from:" + midi_url);
     const midi_json = await Midi.fromUrl(midi_url)
     this.setState({ ...this.state, loadProgress: 20 });
-    console.log(2);
     // populate data structure
     var notes_array = [];
     var duration_array = [];
-    var time_array = []
-    console.log(3);
+    var time_array = [];
     //get the tracks
 
     console.log(midi_json);
 
-    var notes = midi_json.tracks[4].notes;
+    var notes = midi_json.tracks[1].notes;
+    if (this.state.midiName == "Bohemian Rhapsody") {
+      notes = midi_json.tracks[4].notes;
+    }
     notes.forEach(note => {
       //note.midi, note.time, note.duration, note.name
       notes_array.push(note.name);
@@ -128,7 +140,6 @@ class App extends Component {
       })
       console.log(5);
     })*/
-    console.log(6);
     this.setState({
       ...this.state, sampler: new Tone.Sampler({
         urls: {
@@ -138,11 +149,9 @@ class App extends Component {
         baseUrl: sound_url,
       }).toDestination()
     }, () => {
-      console.log(7);
       this.setState({ ...this.state, loadProgress: 40 });
       // play sound
       const now = Tone.now();
-      console.log(8);
 
       Tone.loaded().then(() => {
         var progress = 40;
@@ -151,12 +160,14 @@ class App extends Component {
           this.state.sampler.triggerAttack(notes_array[i], now + time_array[i]);
           this.state.sampler.triggerRelease(now + time_array[i] + duration_array[i]);
           if (parseInt(40 + 60 * (i / notes_array.length)) - progress >= 5) {
-            console.log(parseInt(40 + 60 * (i / notes_array.length)));
             this.setState({ ...this.state, loadProgress: parseInt(40 + 60 * (i / notes_array.length)) });
             progress = parseInt(40 + 60 * (i / notes_array.length));
           }
         }
-        this.setState({ ...this.state, playing: true, midiURL: null, screamURL: null, loadProgress: 0 });
+        // update UI after music is over
+        this.setState({ ...this.state, stopTimer: setTimeout(() => this.stopPlayback(), (time_array[time_array.length - 1] + duration_array[time_array.length - 1])*1000) });
+        //this.state.sampler.triggerRelease(now + time_array[time_array.length - 1] + duration_array[time_array.length - 1]);
+        this.setState({ ...this.state, playing: true, playingName: this.state.midiName, midiURL: null, midiName: null, screamURL: null, loadProgress: 0 });
       })
       console.log(10);
     });
@@ -173,7 +184,7 @@ class App extends Component {
     return (
       <div className="App">
         <div className="App-sidebar">
-          <h3>Admin Stuff</h3>
+          <h4>Admin Stuff</h4>
           <ScreamUpload></ScreamUpload>
           <MIDIUpload></MIDIUpload>
         </div>
@@ -184,7 +195,7 @@ class App extends Component {
 
               <div className="Player-nowplaying-text">
                 <h6>Now Playing</h6>
-                <h5>{this.state.playing ? this.state.playingname : "Not Playing"}</h5>
+                <h5>{this.state.playing ? this.state.playingName : "Not Playing"}</h5>
               </div>
             </Nav>
             <Nav className="justify-content-center" >
@@ -194,11 +205,11 @@ class App extends Component {
             </Nav>
             <div></div>
           </Navbar>
-          <h4>Welcome to Screamify</h4>
+          <h3>Welcome to Screamify</h3>
           <div className="App-content retro">
             {this.state.midiURL == null && <h5>Song Library</h5>}
-            {this.state.midiURL != null && this.state.screamURL == null && <h5>Scream Library</h5>}
-            {this.state.midiURL != null && this.state.screamURL != null && <><h3>Loading audio... </h3><h4>Prepare to be wow-ed.</h4><ProgressBar animated now={this.state.loadProgress} /></>}
+            {this.state.midiURL != null && this.state.screamURL == null && <><a onClick={this.handleBack}>Back</a> <h5>Scream Library</h5></>}
+            {this.state.midiURL != null && this.state.screamURL != null && <><a onClick={this.handleBack}>Back</a> <h5>Loading audio... </h5><h5>Prepare to be wow-ed.</h5><ProgressBar animated now={this.state.loadProgress} /></>}
             {!(this.state.midiURL != null && this.state.screamURL != null) && <><hr /></>}
             <div className="gallery">
               {this.state.midiURL == null && <><Gallery playing={this.state.playing} collection="songs" icon="img/mac.png" onItemSelect={this.handleSongSelect} /></>}
