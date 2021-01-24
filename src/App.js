@@ -4,6 +4,10 @@ import './App.css';
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
 import Badge from 'react-bootstrap/Badge'
+import { parseArrayBuffer } from 'midi-json-parser';
+import * as Tone from 'tone'
+import fs from 'fs'
+
 
 // Firebase
 // Firebase App (the core Firebase SDK) is always required and
@@ -34,7 +38,91 @@ class App extends Component {
     }
   }
 
+
+  async play_screams(midi_url, sound_url, sound_file, sound_key) {
+
+    const { Midi } = require('@tonejs/midi')
+
+    // load a midi file in the browser
+    const midi_json = await Midi.fromUrl(midi_url)
+
+    // populate data structure
+    var notes_array = [];
+    var duration_array = [];
+    var time_array = []
+    //get the tracks
+    midi_json.tracks.forEach(track => {
+      //notes are an array
+      const notes = track.notes
+      notes.forEach(note => {
+        //note.midi, note.time, note.duration, note.name
+        notes_array.push(note.name);
+        duration_array.push(note.duration);
+        time_array.push(note.time);
+      })
+    })
+
+
+    // const sampler = new Tone.Sampler({
+    //   urls: {
+    //     "C4": "gurgling_theremin_1.mp3",
+    //   },
+    //   release: 1,
+    //   baseUrl: "https://tonejs.github.io/audio/berklee/",
+    // }).toDestination();
+
+    // const sampler = new Tone.Sampler({
+    //   urls: {
+    //     "A4": "Slide_String_1_%28short%29.ogg",
+    //   },
+    //   release: 1,
+    //   baseUrl: "https://upload.wikimedia.org/wikipedia/commons/5/5f/",
+    // }).toDestination();
+
+    // const sampler = new Tone.Sampler({
+    //   urls: {
+    //     "A4": "gong_1.mp3",
+    //   },
+    //   release: 1,
+    //   baseUrl: "https://tonejs.github.io/audio/berklee/",
+    // }).toDestination();
+
+    const sampler = new Tone.Sampler({
+      urls: {
+        "C4": sound_file,
+      },
+      release: 1,
+      baseUrl: sound_url,
+    }).toDestination();
+
+    // play sound
+    const now = Tone.now();
+    var time = 0;
+    Tone.loaded().then(() => {
+      for (var i = 0; i < midi_json.tracks[1].notes.length; i++)
+      {
+        sampler.triggerAttack(notes_array[i], now + time_array[i])
+        sampler.triggerRelease(now + time_array[i] + duration_array[i])
+      }
+    })
+
+    return
+  }
+
+
   render() {
+
+    // Sounds
+    // https://upload.wikimedia.org/wikipedia/commons/5/5f/   --- Slide_String_1_%28short%29.ogg
+    // https://tonejs.github.io/audio/berklee/    --- gong_1.mp3, gurgling_theremin_1.mp3
+
+    this.play_screams(
+      "https://upload.wikimedia.org/wikipedia/commons/5/55/MIDI_sample.mid",
+      "https://tonejs.github.io/audio/berklee/",
+      "gong_1.mp3",
+      "C4",
+      )
+
     return (
       <div className="App">
         <header className="App-header">
@@ -48,6 +136,10 @@ class App extends Component {
     );
   }
 }
+
+
+
+
 
 class FileUpload extends Component {
   handleSubmit(event) {
