@@ -35,11 +35,25 @@ var firebaseConfig = {
 class App extends Component {
   constructor(props) {
     super(props);
+    this.state = { playing: false, midiURL: null, screamURL: null };
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     } else {
       firebase.app(); // if already initialized, use that one
     }
+    this.handleSongSelect = this.handleSongSelect.bind(this);
+    this.handleScreamSelect = this.handleScreamSelect.bind(this);
+  }
+
+
+  handleScreamSelect(screamURL) {
+    this.setState({ ...this.state, screamURL: screamURL });
+  }
+
+  handleSongSelect(midiURL) {
+    console.log("SONG SELECTED");
+    console.log(midiURL);
+    this.setState({ ...this.state, midiURL: midiURL });
   }
 
   async play_screams(midi_url, sound_url, sound_file, sound_key) {
@@ -103,23 +117,28 @@ class App extends Component {
         </div>
         <div className="App-body">
           <Navbar fixed="bottom" bg="dark" variant="dark" className="justify-content-center">
-            <Nav className="justify-content-center">
-              <Button className="retro rbtn-big media">
+            <Nav className="justify-content-center" >
+              <Button disabled={!this.state.playing} className="retro rbtn-big media">
                 Play
               </Button>
-              <Button className="retro rbtn-big media">
+              <Button disabled={!this.state.playing} className="retro rbtn-big media">
                 Stop
               </Button>
-              <Button className="retro rbtn-big media">
+              <Button disabled={!this.state.playing} className="retro rbtn-big media">
                 Skip
               </Button>
             </Nav>
           </Navbar>
-          <div className="App-content">
-            <header className="App-header">
-              Welcome To Screamify
-          </header>
-            <Button className="Button" variant="secondary">SCREAM</Button>{' '}
+          <h4>Welcome to Screamify</h4>
+          <div className="App-content retro">
+          {this.state.midiURL == null && <h5>Song Library</h5>}
+          {this.state.midiURL != null && this.state.screamURL == null && <h5>Scream Library</h5>}
+          {this.state.midiURL != null && this.state.screamURL != null && <h3>Loading... Prepare to be wow-ed.</h3>}
+            <hr/>
+            <div className="gallery">
+              {this.state.midiURL == null && <><Gallery playing={this.state.playing} collection="songs" onItemSelect={this.handleSongSelect} /></>}
+              {this.state.midiURL != null && (this.state.screamURL == null && <><Gallery playing={this.state.playing} collection="scream" onItemSelect={this.handleScreamSelect} /></>)}
+            </div>
           </div>
         </div>
       </div>
@@ -127,6 +146,69 @@ class App extends Component {
     );
   }
 }
+
+class Gallery extends Component {
+
+  constructor(props) {
+    super(props);
+    this.state = { listenerUnsubscribe: null, data: <h5>No files</h5> };
+    this.handleChange = this.handleChange.bind(this);
+    this.handleClick = this.handleClick.bind(this);
+  }
+
+  handleClick(midiURL) {
+    this.props.onItemSelect(midiURL);
+  }
+
+  componentDidMount() {
+    var db = firebase.firestore();
+    this.setState({
+      ...this.state,
+      listenerUnsubscribe: db.collection(this.props.collection)
+        .onSnapshot((snapshot) => {
+          console.log(snapshot);
+          var data = <></>;
+          if (snapshot.docs !== null && snapshot.docs.length >= 0) {
+            data = snapshot.docs.map((doc) =>
+              <GalleryItem key={doc.key} url={doc.data().url} onSongClick={this.handleClick} name={doc.data().name} />
+            )
+          }
+          this.setState({
+            ...this.state,
+            data: data
+          });
+          console.log(this.state.data);
+        })
+    });
+  }
+
+  componentWillUnmount() {
+    if (this.state.listenerUnsubscribe != null) {
+      this.state.listenerUnsubscribe();
+    }
+  }
+
+  handleChange(event) {
+    this.setState({
+      ...this.state,
+      [event.target.name]: event.target.value
+    });
+  }
+
+  render() {
+    return (<>{this.state.data}
+    </>
+    );
+  }
+}
+
+function GalleryItem(props) {
+  return <div className='Gallery-item' onClick={() => { props.onSongClick(props.url) }}>
+    <img className="Gallery-icon" src="img/mac.png" alt="Macintosh file icon" />
+    <p>{props.name}</p>
+  </div>;
+}
+
 
 class ScreamUpload extends Component {
   handleSubmit(event) {
